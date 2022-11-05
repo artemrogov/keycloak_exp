@@ -1,0 +1,115 @@
+version: "3.7"
+
+services:
+
+
+ nginx:
+    image: nginx:1.19.8-alpine
+    container_name: nginx
+    restart: unless-stopped
+    links:
+      - api_backend
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/:/etc/nginx/conf.d/
+    networks:
+      - auth_contur_network
+
+ 
+ keycloak:
+    image: quay.io/keycloak/keycloak:19.0.3
+    container_name: keycloak
+    command: ["start-dev --import-realm"]
+    environment:
+      KC_PROXY: "edge"
+      KC_FEATURES: "scripts"
+      KC_UPLOAD_SCRIPTS: "enabled"
+      KC_REALM_NAME: ${KC_REALM_NAME}
+      KC_IMPORT: "auth_realm/my-super-test-realm.json -Dkeycloak.profile.feature.upload_scripts=enabled"
+      KC_MIGRATION_IMPORT_ACTION: "import"
+      KC_HTTP_RELATIVE_PATH: "/auth"
+      KC_HOSTNAME_STRICT_HTTPS: "false"
+      KC_HOSTNAME_STRICT: "false"
+      KC_DB_USERNAME: "test"
+      KC_DB_PASSWORD: "test123"
+      KC_DB: "postgres"
+      KC_DB_URL: "jdbc:postgresql://keycloak_db:5432/test_deploy_keycloak"
+      KEYCLOAK_ADMIN: admin2
+      KEYCLOAK_ADMIN_PASSWORD: test123
+      KC_HTTP_PORT: 8080
+      KC_HTTP_ENABLED: "true"
+    ports:
+      - "8484:8080"
+    volumes:
+      - ./authserver:/opt/keycloak/themes/
+      - ./auth_realm:/opt/keycloak/data/import/my-super-test-realm.json
+    networks:
+      - auth_contur_network
+
+
+ api_backend:
+    build:
+      args:
+         user: ${USER}
+         uid: 1000
+      context: ./api_backend
+      dockerfile: Dockerfile
+    container_name: api_backend
+    links:
+       - backend_db
+    ports:
+      - 9000:9000
+    restart: unless-stopped
+    working_dir: /var/www/html/
+    tty: true
+    volumes:
+      - ./api_backend/src/:/var/www/html/
+    networks:
+     - auth_contur_network
+
+
+ backend_db:
+    image: postgres:12.5-alpine
+    restart: unless-stopped
+    container_name: backend_db
+    tty: true
+    environment:
+        POSTGRES_DB: test
+        POSTGRES_USER: test
+        POSTGRES_PASSWORD: test
+    ports:
+      - 5432:5432
+    volumes:
+     - backend_db_data:/var/lib/postgresql/data/
+    networks:
+      - auth_contur_network
+      
+ keycloak_db:
+    image: postgres:12.5-alpine
+    restart: unless-stopped
+    container_name: keycloak_db
+    tty: true
+    environment:
+        POSTGRES_DB: test_deploy_keycloak
+        POSTGRES_USER: test
+        POSTGRES_PASSWORD: test123
+    ports:
+      - 5433:5432
+    volumes:
+     - keycloak_data:/var/lib/postgresql/data/
+    networks:
+      - auth_contur_network
+
+    
+networks:
+  auth_contur_network:
+    driver: bridge
+
+volumes:
+   authserver:
+   auth_realm: 
+   backend_db_data:
+   keycloak_data:
+   www-html:
