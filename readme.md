@@ -5,6 +5,11 @@
 по протоколу [openidconnect](https://openid.net/connect/). В качестве web приложения в данный момент выступает, дефолтная встроенная тема сервера авторизации keycloack(в данный момент не реализовал клиента). Для подключения к серверу авторизации php-backend'а использовал [пакет Simple Keycloak Guard for Laravel / Lumen](https://github.com/robsontenorio/laravel-keycloak-guard).
 
 
+### Общая архитектурная схема 
+
+![Image text](https://github.com/artemrogov/keycloak_exp/blob/master/simple_auth_digram.png)
+
+
 
 ## Первоначальная настройка
 
